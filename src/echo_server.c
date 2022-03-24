@@ -19,6 +19,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "parse.h"
+#include "response.h"
+
 #define ECHO_PORT 9999
 #define BUF_SIZE 4096
 
@@ -85,13 +88,16 @@ int main(int argc, char* argv[])
 
         while((readret = recv(client_sock, buf, BUF_SIZE, 0)) >= 1)
         {
-            if (send(client_sock, buf, readret, 0) != readret)
-            {
-                close_socket(client_sock);
-                close_socket(sock);
-                fprintf(stderr, "Error sending to client.\n");
-                return EXIT_FAILURE;
-            }
+            handle_request(client_sock, readret, buf);
+
+            // if (send(client_sock, buf, readret, 0) != readret)
+            // {
+            //     close_socket(client_sock);
+            //     close_socket(sock);
+            //     fprintf(stderr, "Error sending to client.\n");
+            //     return EXIT_FAILURE;
+            // }
+
             memset(buf, 0, BUF_SIZE);
         } 
 

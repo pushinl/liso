@@ -19,15 +19,17 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define ECHO_PORT 9999
-#define BUF_SIZE 4096
+#define BUF_SIZE 8192
 
 int main(int argc, char* argv[])
 {
-    if (argc != 3)
+    if (argc != 4)
     {
-        fprintf(stderr, "usage: %s <server-ip> <port>",argv[0]);
+        fprintf(stderr, "usage: %s <server-ip> <port> <fileName>",argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -60,15 +62,26 @@ int main(int argc, char* argv[])
     }
         
     char msg[BUF_SIZE]; 
-    fgets(msg, BUF_SIZE, stdin);
+
+    // fgets(msg, BUF_SIZE, stdin);
+    // 仿照example.c写的从文件读入
+    int fd_in = open(argv[3], O_RDONLY);
+
+    if(fd_in < 0) {
+      printf("Failed to open the file\n");
+      return 0;
+    }
+    int readRet = read(fd_in, msg, BUF_SIZE);
+
     
     int bytes_received;
-    fprintf(stdout, "Sending %s", msg);
-    send(sock, msg , strlen(msg), 0);
+    fprintf(stdout, "================Sending==============\n %s", msg);
+    send(sock, msg , readRet, 0);
+    
     if((bytes_received = recv(sock, buf, BUF_SIZE, 0)) > 1)
     {
         buf[bytes_received] = '\0';
-        fprintf(stdout, "Received %s", buf);
+        fprintf(stdout, "================Received==============\n %s", buf);
     }        
 
     freeaddrinfo(servinfo);
