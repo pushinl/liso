@@ -202,7 +202,7 @@ request_line: token t_sp text t_sp text t_crlf {
     strcpy(parsing_request->http_method, $1);
 	strcpy(parsing_request->http_uri, $3);
 	strcpy(parsing_request->http_version, $5);
-}
+};
 
 request_header: token ows t_colon ows text ows t_crlf {
 	YPRINTF("request_Header:\n%s\n%s\n",$1,$5);
@@ -211,6 +211,8 @@ request_header: token ows t_colon ows text ows t_crlf {
 	parsing_request->header_count++;
 };
 
+request_headers: request_headers request_header {} | {};
+
 
 /*
  * You need to fill this rule, and you are done! You have all the assembly
@@ -218,7 +220,7 @@ request_header: token ows t_colon ows text ows t_crlf {
  * All the best!
  *
  */
-request: request_line request_header t_crlf{
+request: request_line request_headers t_crlf{
 	YPRINTF("parsing_request: Matched Success.\n");
 	return SUCCESS;
 };
