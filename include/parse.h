@@ -19,6 +19,7 @@ typedef struct
 	char http_uri[4096];
 	Request_header *headers;
 	int header_count;
+	int header_capacity; // 动态管理headers的容量
 } Request;
 
 Request* parse(char *buffer, int size,int socketFd);
