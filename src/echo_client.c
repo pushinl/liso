@@ -75,13 +75,13 @@ int main(int argc, char* argv[])
 
     
     int bytes_received;
-    fprintf(stdout, "================Sending==============\n %s", msg);
+    fprintf(stdout, "================Sending==============\n%s", msg);
     send(sock, msg , readRet, 0);
-    
+
     if((bytes_received = recv(sock, buf, BUF_SIZE, 0)) > 1)
     {
         buf[bytes_received] = '\0';
-        fprintf(stdout, "================Received==============\n %s", buf);
+        fprintf(stdout, "================Received==============\n%s", buf);
     }        
 
     freeaddrinfo(servinfo);
