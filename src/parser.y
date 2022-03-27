@@ -245,4 +245,7 @@ void set_parsing_options(char *buf, size_t siz, Request *request)
     parsing_request = request;
 }
 
-void yyerror (const char *s) {fprintf (stderr, "%s\n", s);}
+void yyerror (const char *s) {
+	fprintf (stderr, "%s\n", s);
+	yylex_destroy();
+}

@@ -19,11 +19,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "parse.h"
 #include "response.h"
 
 #define ECHO_PORT 9999
-#define BUF_SIZE 4096
+#define BUF_SIZE 8192
 
 int close_socket(int sock)
 {
