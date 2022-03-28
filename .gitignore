@@ -1,6 +1,6 @@
 example
-echo_client
-echo_server
+liso_client
+liso_server
 lex.yy.c
 y.tab.c
 y.tab.h

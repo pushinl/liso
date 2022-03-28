@@ -18,11 +18,15 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #include "response.h"
 
 #define ECHO_PORT 9999
 #define BUF_SIZE 8192
+
+
+struct sockaddr_in addr, cli_addr;
 
 int close_socket(int sock)
 {
@@ -39,8 +43,8 @@ int main(int argc, char* argv[])
     int sock, client_sock;
     ssize_t readret;
     socklen_t cli_size;
-    struct sockaddr_in addr, cli_addr;
     char buf[BUF_SIZE];
+    logger_init();
 
     fprintf(stdout, "----- Echo Server -----\n");
     

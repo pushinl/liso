@@ -30,12 +30,14 @@ void handle_request(int client_sock, ssize_t readret, char* recv_buf) {
     if (request == NULL) {
         add_res_statu_line(client_sock, res_buf, RESPONSE_400);
         send(client_sock, res_buf, strlen(res_buf), 0);
+        log_access(request, 400, strlen(res_buf));
         return;
     }
 
     if(strcmp(request->http_version, HTTP_VERSION) != 0) {
         add_res_statu_line(client_sock, res_buf, RESPONSE_505);
         send(client_sock, res_buf, strlen(res_buf), 0);
+        log_access(request, 505, strlen(res_buf));
         return;
     }
 
@@ -48,6 +50,9 @@ void handle_request(int client_sock, ssize_t readret, char* recv_buf) {
         return;
     } else {
         add_res_statu_line(client_sock, res_buf, RESPONSE_501);
+        send(client_sock, res_buf, strlen(res_buf), 0);
+        log_access(request, 501, strlen(res_buf));
+        return;
     }
 
     send(client_sock, res_buf, strlen(res_buf), 0);
@@ -60,19 +65,18 @@ void handle_head(int client_sock, Request* request, char* res_buf) {
     strcpy(path, "static_site");
     if(strcmp(request->http_uri, "/") == 0){
         strcat(path, "/index.html");
-    } else {
-        add_res_statu_line(client_sock, res_buf, RESPONSE_404);
-        return;
-    };
+    } else strcat(path, request->http_uri);
 
+    int errno = 2;
     FILE *fd = fopen(path, "rb");
-    if(fd == NULL) {
-        add_res_statu_line(client_sock, res_buf, RESPONSE_404);
-        return;
-    }
-    
+
     struct stat buf;
     stat(path, &buf);
+    if(fd == NULL) {
+        add_res_statu_line(client_sock, res_buf, RESPONSE_404);
+        log_error("error", strerror(errno));
+        return;
+    }
     int file_size = buf.st_size;
     char file_size_header[1024];
     sprintf(file_size_header, "Content-Lenght: %d\r\n", file_size);
@@ -81,6 +85,8 @@ void handle_head(int client_sock, Request* request, char* res_buf) {
     
     strcat(res_buf, "Content-Type: text/html\r\n");
     strcat(res_buf, file_size_header);
+    
+    log_access(request, 200, strlen(res_buf));
 }
 
 void handle_get(int client_sock, Request* request, char* res_buf) {
@@ -88,16 +94,16 @@ void handle_get(int client_sock, Request* request, char* res_buf) {
     strcpy(path, "static_site");
     if(strcmp(request->http_uri, "/") == 0){
         strcat(path, "/index.html");
-    } else {
-        add_res_statu_line(client_sock, res_buf, RESPONSE_404);
-        return;
-    };
+    } else strcat(path, request->http_uri);
 
+    int errno = 2;
     FILE *fd = fopen(path, "rb");
     struct stat buf;
     stat(path, &buf);
+    
     if(fd == NULL) {
         add_res_statu_line(client_sock, res_buf, RESPONSE_404);
+        log_error("error", strerror(errno));
         return;
     }
 
@@ -115,6 +121,8 @@ void handle_get(int client_sock, Request* request, char* res_buf) {
 
     strcat(res_buf, "\r\n");
     strcat(res_buf, file);
+
+    log_access(request, 200, strlen(res_buf));
 }
 
 void add_res_statu_line(int client_sock, char* res_buf, char* res_status) {
