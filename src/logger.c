@@ -42,9 +42,9 @@ int log_access(Request *request, int response_code, int response_size){
   memset(log, 0, 1024);
   struct tm* now_tm = localtime(&timer);
   if(request == NULL){
-    sprintf(log,"%s -- [%d/%d/%d %d:%d:%d] \"%s %s %s\" %d %d\n",get_client_ip(),now_tm->tm_mon,now_tm->tm_mday,
+    sprintf(log,"%s -- [%d/%d/%d %d:%d:%d] \"%s\" %d %d\n",get_client_ip(),now_tm->tm_mon,now_tm->tm_mday,
             now_tm->tm_year+1900,now_tm->tm_hour,now_tm->tm_min,now_tm->tm_sec,
-            "BAD REQUEST","","",response_code,response_size);
+            "BAD REQUEST",response_code,response_size);
   }else{
     sprintf(log,"%s -- [%d/%d/%d %d:%d:%d] \"%s %s %s\" %d %d\n",get_client_ip(),now_tm->tm_mon,now_tm->tm_mday,
             now_tm->tm_year+1900,now_tm->tm_hour,now_tm->tm_min,now_tm->tm_sec,
