@@ -91,8 +91,16 @@ int main(int argc, char* argv[])
 
         while((readret = recv(client_sock, buf, BUF_SIZE, 0)) >= 1)
         {
-            handle_request(client_sock, readret, buf);
-
+            char *div = "\r\n\r\n";
+            char *haystack = buf;
+            char *pos = strstr(haystack, div);
+            char a_request[BUF_SIZE];
+            while(pos != NULL) {
+                strncpy(a_request, haystack, pos - haystack + strlen(div));
+                handle_request(client_sock, strlen(a_request), a_request);
+                haystack = pos + strlen(div);
+                pos = strstr(haystack, div);
+            }
             // if (send(client_sock, buf, readret, 0) != readret)
             // {
             //     close_socket(client_sock);

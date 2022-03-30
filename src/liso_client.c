@@ -78,11 +78,23 @@ int main(int argc, char* argv[])
     fprintf(stdout, "================Sending==============\n%s", msg);
     send(sock, msg , readRet, 0);
 
-    if((bytes_received = recv(sock, buf, BUF_SIZE, 0)) > 1)
-    {
-        buf[bytes_received] = '\0';
-        fprintf(stdout, "================Received==============\n%s", buf);
-    }        
+    char *div = "\r\n\r\n";
+    char *haystack = msg;
+    char *pos = strstr(haystack, div);
+    int request_count = 0;
+    while(pos != NULL)    {
+        request_count++;
+        haystack = pos + strlen(div);
+        pos = strstr(haystack, div);
+    }
+
+    for(int i = 0; i < request_count; i++) {
+        if((bytes_received = recv(sock, buf, BUF_SIZE, 0)) > 1)
+        {
+            buf[bytes_received] = '\0';
+            fprintf(stdout, "================Received==============\n%s", buf);
+        }        
+    } 
 
     freeaddrinfo(servinfo);
     close(sock);    

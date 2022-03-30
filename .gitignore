@@ -9,3 +9,4 @@ y.tab.h
 
 *.o
 *.ko
+*.log
