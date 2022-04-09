@@ -24,9 +24,11 @@
 
 #define ECHO_PORT 9999
 #define BUF_SIZE 8192
+#define MAX_CLIENTS 1024
 
 
 struct sockaddr_in addr, cli_addr;
+int client_sockets[MAX_CLIENTS];
 
 int close_socket(int sock)
 {
@@ -44,6 +46,14 @@ int main(int argc, char* argv[])
     ssize_t readret;
     socklen_t cli_size;
     char buf[BUF_SIZE];
+    fd_set client_set;
+    int MAX_fd;
+    struct timeval time_out;
+    time_out.tv_sec = 30;
+    time_out.tv_usec = 0;
+
+    memset(client_sockets, 0, sizeof(client_sockets));
+
     logger_init();
 
     fprintf(stdout, "----- Echo Server -----\n");
@@ -78,53 +88,66 @@ int main(int argc, char* argv[])
     /* finally, loop waiting for input and then write it back */
     while (1)
     {
+        FD_ZERO(&client_set);
+        FD_SET(sock, &client_set);
+        MAX_fd = sock;
+        
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            int sock_fd = client_sockets[i];
+            if(sock_fd > 0) FD_SET(sock_fd, &client_set);
+            if(sock_fd > MAX_fd) MAX_fd = sock_fd;
+        }
+
+        int ret = select(MAX_fd + 1, &client_set, NULL, NULL, &time_out);
+
+        if(ret < 0) {
+            printf("select failed\n");
+            break;
+        }
+        if(ret == 0) {
+            printf("timeout\n");
+            continue;
+        }
+
         cli_size = sizeof(cli_addr);
-        if ((client_sock = accept(sock, (struct sockaddr *) &cli_addr,
-                                    &cli_size)) == -1)
-        {
-            close(sock);
-            fprintf(stderr, "Error accepting connection.\n");
-            return EXIT_FAILURE;
+
+        if (FD_ISSET(sock, &client_set)) {
+            if ((client_sock = accept(sock, (struct sockaddr *) &cli_addr, &cli_size)) == -1) {
+                // close(sock);
+                // fprintf(stderr, "Error accepting connection.\n");
+                exit(EXIT_FAILURE);
+            }
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if(client_sockets[i] == 0) {
+                    client_sockets[i] = client_sock;
+                    break;
+                }
+            }
         }
 
         readret = 0;
 
-        while((readret = recv(client_sock, buf, BUF_SIZE, 0)) >= 1)
-        {
-            char *div = "\r\n\r\n";
-            char *haystack = buf;
-            char *pos = strstr(haystack, div);
-            char a_request[BUF_SIZE];
-            while(pos != NULL) {
-                strncpy(a_request, haystack, pos - haystack + strlen(div));
-                handle_request(client_sock, strlen(a_request), a_request);
-                haystack = pos + strlen(div);
-                pos = strstr(haystack, div);
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            int sock_fd = client_sockets[i];
+            if(FD_ISSET(sock_fd, &client_set)) {
+                if((readret = recv(sock_fd, buf, BUF_SIZE, 0)) >= 1){
+                    char *div = "\r\n\r\n";
+                    char *haystack = buf;
+                    char *pos = strstr(haystack, div);
+                    char a_request[BUF_SIZE];
+                    while(pos != NULL) {
+                        strncpy(a_request, haystack, pos - haystack + strlen(div));
+                        handle_request(sock_fd, strlen(a_request), a_request);
+                        haystack = pos + strlen(div);
+                        pos = strstr(haystack, div);
+                    }
+                } else {
+                    int sd = client_sockets[i];
+                    client_sockets[i] = 0;
+                    close_socket(sd);
+                }
+                memset(buf, 0, BUF_SIZE);
             }
-            // if (send(client_sock, buf, readret, 0) != readret)
-            // {
-            //     close_socket(client_sock);
-            //     close_socket(sock);
-            //     fprintf(stderr, "Error sending to client.\n");
-            //     return EXIT_FAILURE;
-            // }
-
-            memset(buf, 0, BUF_SIZE);
-        } 
-
-        if (readret == -1)
-        {
-            close_socket(client_sock);
-            close_socket(sock);
-            fprintf(stderr, "Error reading from client socket.\n");
-            return EXIT_FAILURE;
-        }
-
-        if (close_socket(client_sock))
-        {
-            close_socket(sock);
-            fprintf(stderr, "Error closing client socket.\n");
-            return EXIT_FAILURE;
         }
     }
 
